@@ -10,34 +10,28 @@ interface QrScannerProps {
 
 export default function QrScanner({ onScan, onError }: QrScannerProps) {
     const scannerRef = useRef<Html5Qrcode | null>(null);
-    const isScanning = useRef(false);
+    const isActive = useRef(false);
 
     useEffect(() => {
         const startScanner = async () => {
-            if (isScanning.current) return;
-
             try {
                 const scanner = new Html5Qrcode('qr-reader');
                 scannerRef.current = scanner;
-                isScanning.current = true;
+                isActive.current = true;
 
                 await scanner.start(
                     { facingMode: 'environment' },
-                    {
-                        fps: 10,
-                        qrbox: { width: 250, height: 250 }
-                    },
-                    (decodedText: any) => {
-                        scanner.stop();
-                        isScanning.current = false;
+                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    async (decodedText) => {
+                        if (!isActive.current) return;
+
+                        isActive.current = false;
+                        await scanner.stop().catch(() => { });
                         onScan(decodedText);
                     },
-                    (errorMessage) => {
-                        // Ignorer les erreurs de scan normales
-                    }
+                    () => { }
                 );
             } catch (err) {
-                isScanning.current = false;
                 onError(err as Error);
             }
         };
@@ -45,16 +39,16 @@ export default function QrScanner({ onScan, onError }: QrScannerProps) {
         startScanner();
 
         return () => {
-            if (scannerRef.current && isScanning.current) {
-                scannerRef.current.stop().catch(console.error);
-                isScanning.current = false;
+            if (scannerRef.current && isActive.current) {
+                scannerRef.current.stop().catch(() => { });
+                isActive.current = false;
             }
         };
-    }, [onScan, onError]);
+    }, []);
 
     return (
         <div className="overflow-hidden rounded-xl">
-            <div id="qr-reader" className="w-full"></div>
+            <div id="qr-reader" className="w-full" />
         </div>
     );
 }

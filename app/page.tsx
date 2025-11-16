@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import dynamic from 'next/dynamic';
 import QrScanner from '@/components/QrScanner';
 
 interface DriverData {
@@ -26,34 +25,26 @@ export default function Home() {
         `https://dnk.aimen-blog.com/api/test?matricule=${encodeURIComponent(matricule)}`
       );
 
-      if (!response.ok) {
-        throw new Error('Erreur réseau');
-      }
-
       const data = await response.json();
-      console.log(data)
-      if (data && data.matricule && data.firstname && data.lastname) {
+
+      if (response.ok && data?.matricule) {
         setDriverData(data);
-        setScanning(false);
       } else {
         setError('Aucun conducteur trouvé');
       }
     } catch (err) {
-      setError('Aucun conducteur trouvé');
+      setError('Erreur de connexion au serveur');
     } finally {
       setLoading(false);
+      setScanning(false); // Ferme définitivement la caméra après scan
     }
   };
 
-  const handleError = (err: Error) => {
-    console.error(err);
-    setError('Erreur lors du scan du QR code');
-  };
-
-  const resetScanner = () => {
+  const resetAll = () => {
     setScanning(false);
     setDriverData(null);
     setError('');
+    setLoading(false);
   };
 
   return (
@@ -64,20 +55,26 @@ export default function Home() {
             Scanner Conducteur
           </h1>
 
-          {!scanning && !driverData && (
+          {/* Bouton pour commencer le scan */}
+          {!scanning && !driverData && !loading && !error && (
             <button
-              onClick={() => setScanning(true)}
+              onClick={() => {
+                resetAll();
+                setScanning(true);
+              }}
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-xl transition duration-200 shadow-lg hover:shadow-xl"
             >
               📷 Scanner QR Code
             </button>
           )}
 
+          {/* Scanner actif */}
           {scanning && (
             <div>
-              <QrScanner onScan={handleScan} onError={handleError} />
+              <QrScanner onScan={handleScan} onError={() => setError("Erreur lors du scan")} />
+
               <button
-                onClick={resetScanner}
+                onClick={resetAll}
                 className="w-full mt-4 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-xl transition duration-200"
               >
                 Annuler
@@ -85,65 +82,58 @@ export default function Home() {
             </div>
           )}
 
+          {/* Chargement */}
           {loading && (
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-              <p className="mt-4 text-gray-600">Vérification en cours...</p>
+              <p className="mt-4 text-gray-600">Recherche du conducteur...</p>
             </div>
           )}
 
-          {error && (
+          {/* Erreur */}
+          {error && !scanning && (
             <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-              <div className="flex items-center">
-                <span className="text-2xl mr-3">❌</span>
-                <div>
-                  <p className="font-semibold text-red-800">Erreur</p>
-                  <p className="text-red-700">{error}</p>
-                </div>
-              </div>
+              <p className="font-semibold text-red-800">Erreur</p>
+              <p className="text-red-700">{error}</p>
+
               <button
-                onClick={resetScanner}
-                className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
+                onClick={() => {
+                  setError('');
+                  setScanning(true);
+                }}
+                className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg"
               >
                 Réessayer
               </button>
             </div>
           )}
 
+          {/* Résultat conducteur */}
           {driverData && (
             <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
-              <div className="flex items-center mb-4">
-                <span className="text-2xl mr-3">✅</span>
-                <p className="font-semibold text-green-800 text-lg">
-                  Conducteur trouvé
-                </p>
-              </div>
+              <p className="font-semibold text-green-800 text-lg mb-4">Conducteur trouvé</p>
+
               <div className="space-y-3 bg-white p-4 rounded-lg">
                 <div>
                   <p className="text-sm text-gray-600 font-medium">Matricule</p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {driverData.matricule}
-                  </p>
+                  <p className="text-lg font-semibold text-gray-900">{driverData.matricule}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 font-medium">Prénom</p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {driverData.firstname}
-                  </p>
+                  <p className="text-lg font-semibold text-gray-900">{driverData.firstname}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 font-medium">Nom</p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {driverData.lastname}
-                  </p>
+                  <p className="text-lg font-semibold text-gray-900">{driverData.lastname}</p>
                 </div>
               </div>
+
               <button
                 onClick={() => {
-                  setDriverData(null);
+                  resetAll();
                   setScanning(true);
                 }}
-                className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
+                className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg"
               >
                 Scanner un autre code
               </button>
