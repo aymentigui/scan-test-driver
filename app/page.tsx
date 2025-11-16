@@ -31,7 +31,7 @@ export default function Home() {
       }
 
       const data = await response.json();
-
+      console.log(data)
       if (data && data.matricule && data.firstname && data.lastname) {
         setDriverData(data);
         setScanning(false);
