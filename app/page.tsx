@@ -22,7 +22,7 @@ export default function Home() {
 
     try {
       const response = await fetch(
-        `https://dnk.aimen-blog.com/api/test?matricule=${encodeURIComponent(matricule)}`
+        `https://dnk.aimen-blog.com/api/admin/test?matricule=${encodeURIComponent(matricule)}`
       );
 
       const data = await response.json();
