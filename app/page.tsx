@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
-import QrScanner from '@/components/QRScanner';
+import QrScanner from '@/components/QrScanner';
 
 interface DriverData {
   matricule: string;
